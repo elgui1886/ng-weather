@@ -1,10 +1,11 @@
 import { Injectable, Signal, signal } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, forkJoin, of } from 'rxjs';
+import { switchMap, map, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { CurrentConditions } from './current-conditions/current-conditions.type';
 import { ConditionsAndZip } from './conditions-and-zip.type';
 import { Forecast } from './forecasts-list/forecast.type';
-import { LocationService } from './location.service';
+import { LocationAction, LocationService } from './location.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Injectable()
@@ -16,20 +17,33 @@ export class WeatherService {
   private currentConditions = signal<ConditionsAndZip[]>([]);
 
   constructor(private http: HttpClient, locationService: LocationService) {
-    locationService.location$.pipe()
-      .subscribe(location => {
-        if (location.action === 'add') {
-          this.addCurrentConditions(location.zipcode);
-        } else {
-          this.removeCurrentConditions(location.zipcode);
-        }
-      })
+    locationService.location$.pipe(switchMap(({ action, zipcodes, zipcode }) => {
+      if (action === 'add') {
+        return this.addCurrentConditions$(zipcode, action).pipe(tap(condition => this.addCurrentConditions(condition)));
+      }
+      if (action === 'remove') {
+        return this.removeCurrentConditions$(zipcode, action).pipe(tap(({ zip }) => this.removeCurrentConditions(zip)));
+      }
+      if (action === 'load') {
+        const mapped = zipcodes.map(location => this.addCurrentConditions$(location, action));
+        return forkJoin(mapped).pipe(tap(conditions => conditions.forEach(condition => this.addCurrentConditions(condition))));
+      }
+    }), takeUntilDestroyed())
+      .subscribe();
   }
 
-  addCurrentConditions(zipcode: string): void {
+  addCurrentConditions$(zipcode: string, action: Omit<LocationAction, 'remove'>) {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
-    this.http.get<CurrentConditions>(`${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`)
-      .subscribe(data => this.currentConditions.update(conditions => [...conditions, { zip: zipcode, data }]));
+    return this.http.get<CurrentConditions>(`${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`)
+      .pipe(map(data => ({ zip: zipcode, data, action })));
+  }
+  removeCurrentConditions$(zipcode: string, action: Omit<LocationAction, 'add' | 'load'>) {
+    // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
+    return of({ zip: zipcode, data: undefined, action });
+  }
+
+  addCurrentConditions({ zip: zipcode, data }: ConditionsAndZip) {
+    this.currentConditions.update(conditions => [...conditions, { zip: zipcode, data }]);
   }
 
   removeCurrentConditions(zipcode: string) {
