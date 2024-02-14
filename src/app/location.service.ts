@@ -1,27 +1,35 @@
 import { Injectable } from "@angular/core";
-import { WeatherService } from "./weather.service";
-import { BehaviorSubject } from "rxjs";
+import { ReplaySubject, Subject } from "rxjs";
 
 export const LOCATIONS: string = "locations";
 
+export type Location = {
+  zipcode: string;
+  action: 'add' | 'remove'
+};
+
 @Injectable()
 export class LocationService {
-  private locations$ = new BehaviorSubject<string[]>([]);
-
-  location$ = this.locations$.asObservable();
-
+  private _locations$ = new ReplaySubject<Location>();
+  location$ = this._locations$.asObservable();
   locations: string[] = [];
 
   constructor() {
     let locString = localStorage.getItem(LOCATIONS);
     if (locString) this.locations = JSON.parse(locString);
-    this.locations$.next(this.locations);
+    this.locations.forEach(zipcode => this._locations$.next({
+      zipcode,
+      action: 'add'
+    }));
   }
 
   addLocation(zipcode: string) {
     this.locations.push(zipcode);
     localStorage.setItem(LOCATIONS, JSON.stringify(this.locations));
-    this.weatherService.addCurrentConditions(zipcode);
+    this._locations$.next({
+      zipcode,
+      action: 'add'
+    })
   }
 
   removeLocation(zipcode: string) {
@@ -29,7 +37,10 @@ export class LocationService {
     if (index !== -1) {
       this.locations.splice(index, 1);
       localStorage.setItem(LOCATIONS, JSON.stringify(this.locations));
-      this.weatherService.removeCurrentConditions(zipcode);
+      this._locations$.next({
+        zipcode,
+        action: 'remove'
+      })
     }
   }
 }

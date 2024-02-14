@@ -1,10 +1,11 @@
-import {Injectable, Signal, signal} from '@angular/core';
-import {Observable} from 'rxjs';
-
-import {HttpClient} from '@angular/common/http';
-import {CurrentConditions} from './current-conditions/current-conditions.type';
-import {ConditionsAndZip} from './conditions-and-zip.type';
-import {Forecast} from './forecasts-list/forecast.type';
+import { Injectable, Signal, signal } from '@angular/core';
+import { Observable, Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { CurrentConditions } from './current-conditions/current-conditions.type';
+import { ConditionsAndZip } from './conditions-and-zip.type';
+import { Forecast } from './forecasts-list/forecast.type';
+import { LocationService } from './location.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Injectable()
 export class WeatherService {
@@ -14,12 +15,21 @@ export class WeatherService {
   static ICON_URL = 'https://raw.githubusercontent.com/udacity/Sunshine-Version-2/sunshine_master/app/src/main/res/drawable-hdpi/';
   private currentConditions = signal<ConditionsAndZip[]>([]);
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, locationService: LocationService) {
+    locationService.location$.pipe()
+      .subscribe(location => {
+        if (location.action === 'add') {
+          this.addCurrentConditions(location.zipcode);
+        } else {
+          this.removeCurrentConditions(location.zipcode);
+        }
+      })
+  }
 
   addCurrentConditions(zipcode: string): void {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
     this.http.get<CurrentConditions>(`${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`)
-      .subscribe(data => this.currentConditions.update(conditions => [...conditions, {zip: zipcode, data}]));
+      .subscribe(data => this.currentConditions.update(conditions => [...conditions, { zip: zipcode, data }]));
   }
 
   removeCurrentConditions(zipcode: string) {
