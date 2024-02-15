@@ -1,23 +1,15 @@
-@if(currentTabs() && currentTabs().length > 0) {
 <nav>
-  <ul style="display: flex; flex-direction: row">
-    @for(tab of currentTabs(); track tab.id) {
-    <li
-      style="
-        padding-left: 10px;
-        padding-right: 10px;
-        padding-top: 5px;
-        padding-bottom: 5x;
-      "
-      (click)="seletedTabChange(tab)"
-      [class.active]="tab.active"
-    >
-      {{ tab.title }}
+  <ul>
+    @for(tab of currentDisplayedTabs(); track tab.id) {
+    <li (click)="seletedTabChange(tab)" [class.active]="tab.active">
+      <div class="tab-header">
+        <span class="tab-header--title">{{ tab.title }}</span>
+        <span class="tab-header--action" (click)="removeTab(tab)">&times;</span>
+      </div>
     </li>
-    }
+    } 
   </ul>
 </nav>
-<div style="display: flex; align-items: center;">
+<div class="tab-body">
   <ng-content select="app-tab" />
 </div>
-}

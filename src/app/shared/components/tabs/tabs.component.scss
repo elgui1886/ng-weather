@@ -1,15 +1,48 @@
 nav {
     ul {
+        display: flex; 
+        flex-direction: row; 
+        flex-wrap: wrap; 
+        gap: 0.5rem;
         list-style-type: none;
         padding: 0;
         margin: 0;
         li {
-            background-color: gray;
+            background-color:#617AA0;
             cursor: pointer;
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            max-width: 20%;
+            flex: 1;
+            border: 1px solid black;
+
+            .tab-header {
+                display: flex; 
+                flex-direction: row; 
+                justify-content: space-between;
+                .tab-header--title {
+                    color: white; font-size: large;
+                }
+                .tab-header--action {
+                    cursor: pointer;
+                }
+            }
 
             &.active {
-                background-color: white;
+                background-color: lighten(#617AA0, 20%);
             }
         }
+        li:hover:not(.active) {
+            background-color: lighten(#617AA0, 10%);
+        }
     }
+}
+
+.tab-body {
+    display: flex; 
+    align-items: center; 
+    border: 1px solid black; 
+    margin-top: 0.5rem;
 }

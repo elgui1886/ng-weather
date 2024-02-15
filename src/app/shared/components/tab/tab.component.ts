@@ -2,8 +2,7 @@ import { Component,  Input, booleanAttribute } from '@angular/core';
 
 @Component({
   selector: 'app-tab',
-  templateUrl: './tab.component.html',
-  styleUrl: './tab.component.scss'
+  templateUrl: './tab.component.html'
 })
 export class TabComponent {
 
