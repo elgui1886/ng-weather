@@ -1,0 +1,15 @@
+nav {
+    ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        li {
+            background-color: gray;
+            cursor: pointer;
+
+            &.active {
+                background-color: white;
+            }
+        }
+    }
+}

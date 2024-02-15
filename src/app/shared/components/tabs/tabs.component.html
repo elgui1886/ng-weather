@@ -1,0 +1,23 @@
+@if(currentTabs() && currentTabs().length > 0) {
+<nav>
+  <ul style="display: flex; flex-direction: row">
+    @for(tab of currentTabs(); track tab.id) {
+    <li
+      style="
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 5px;
+        padding-bottom: 5x;
+      "
+      (click)="seletedTabChange(tab)"
+      [class.active]="tab.active"
+    >
+      {{ tab.title }}
+    </li>
+    }
+  </ul>
+</nav>
+<div style="display: flex; align-items: center;">
+  <ng-content select="app-tab" />
+</div>
+}
