@@ -13,6 +13,7 @@ export type Locations = {
 @Injectable()
 export class LocationService {
   private _locations$ = new ReplaySubject<Locations>();
+  // Se to easly prevent users from adding the same location multiple times
   private _locationSet = new Set<string>();
   private get _locations() {
     return [...this._locationSet];
