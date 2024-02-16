@@ -43,20 +43,6 @@ export class TabsComponent implements AfterContentInit, OnDestroy {
   @Output() selectedTabChanged = new EventEmitter<TabComponent>();
   @Output() removeTabClicked = new EventEmitter<TabComponent>();
 
-  constructor() {
-    /**
-     * This effect will run whenever the currentSelectedTab or allTabs change
-     * It will set the active property of the tabs based on the currentSelectedTab
-     */
-    effect(() => {
-      const currentselectedtab = this.currentSelectedTab();
-      const tabs = this._allTabs();;
-      tabs.forEach((tab) => {
-        tab.active = tab.id === currentselectedtab.id;
-      });
-    });
-  }
-
   /**
   * Listen for changes of the tabs QueryList
   * When the tabs change, we need to make sure that the currentSelectedTab is set
@@ -75,6 +61,7 @@ export class TabsComponent implements AfterContentInit, OnDestroy {
         this._removedTabIds.set([]);
         // If there is no selected tab, set the first tab as selected
         if (tabs.length > 0 && !this.currentSelectedTab()) {
+          debugger;
           this.currentSelectedTab.set(tabs.first);
         }
       });
@@ -87,7 +74,7 @@ export class TabsComponent implements AfterContentInit, OnDestroy {
 
   removeTab(tab: TabComponent) {
     // check if the removed that was the active one
-    if (tab.active) {
+    if (tab.id === this.currentSelectedTab()?.id) {
       const tabs = this.currentDisplayedTabs();
       const index = tabs.indexOf(tab);
       // if it is not the first tab that has been removed, set the previous one as active

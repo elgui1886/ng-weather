@@ -1,7 +1,9 @@
 <app-tabs (removeTabClicked)="locationService.removeLocation($event.id)">
   @for(location of currentConditionsByZip(); track location.zip) {
   <app-tab [id]="location.zip" [title]="location.data.name + ' (' + location.zip + ')'">
-    <div tabBody style="padding: 2rem">
+    <h3>{{ location.data.name }} ({{ location.zip }})</h3>
+    <span (click)="locationService.removeLocation(location.zip)">&times;</span>
+    <tab-body style="padding: 2rem">
       <div style="background-color: lightgray; display: flex; column-gap: 5rem;">
         <div style="padding: 2rem;">
           <h3>{{ location.data.name }} ({{ location.zip }})</h3>
@@ -20,7 +22,7 @@
           <img [src]="weatherService.getWeatherIcon(location.data.weather[0].id)" />
         </div>
       </div>
-    </div>
+    </tab-body>
   </app-tab>
   }
 </app-tabs>

@@ -32,10 +32,13 @@ nav {
 
             &.active {
                 background-color: lighten(#617AA0, 20%);
+                padding-top: 6px;
+                transform: translateY(-3px);
             }
         }
         li:hover:not(.active) {
             background-color: lighten(#617AA0, 10%);
+            transform: translateY(-1px);
         }
     }
 }

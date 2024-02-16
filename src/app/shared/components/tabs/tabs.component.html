@@ -1,15 +1,18 @@
 <nav>
   <ul>
     @for(tab of currentDisplayedTabs(); track tab.id) {
-    <li (click)="seletedTabChange(tab)" [class.active]="tab.active">
+    <li (click)="seletedTabChange(tab)" [class.active]="tab.id === this.currentSelectedTab()?.id">
       <div class="tab-header">
         <span class="tab-header--title">{{ tab.title }}</span>
         <span class="tab-header--action" (click)="removeTab(tab)">&times;</span>
       </div>
     </li>
-    } 
+    }
   </ul>
 </nav>
 <div class="tab-body">
-  <ng-content select="app-tab" />
+  <ng-container *ngTemplateOutlet="currentSelectedTab()?.tabBody" />
 </div>
+
+<ng-template #baseHeaderTemplate let-tab>
+</ng-template>
