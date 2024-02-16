@@ -1,6 +1,6 @@
 import { AfterContentInit, Component, ContentChild, Input, TemplateRef, ViewChild, booleanAttribute } from '@angular/core';
-import { TabBodyDirective } from './tab-body.directive.';
-import { TabHeaderDirective } from './tab-header.directive';
+import { TabBodyDirective } from '../../directives/tab-body.directive.';
+import { TabHeaderDirective } from '../../directives/tab-header.directive';
 
 @Component({
   selector: 'app-tab',

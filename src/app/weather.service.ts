@@ -1,15 +1,26 @@
 import { Injectable, Signal, signal } from "@angular/core";
-import { Observable, Subject, forkJoin, of } from "rxjs";
-import { switchMap, map, tap, mergeMap, concatMap } from "rxjs/operators";
+import { Observable, forkJoin, of } from "rxjs";
+import {
+  map,
+  tap,
+  concatMap,
+} from "rxjs/operators";
 import { HttpClient } from "@angular/common/http";
 import { CurrentConditions } from "./current-conditions/current-conditions.type";
 import { ConditionsAndZip } from "./conditions-and-zip.type";
 import { Forecast } from "./forecasts-list/forecast.type";
 import { LocationAction, LocationService } from "./location.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { environment } from "environments/environment";
+
+type CacheResponseItem = {
+  data: CurrentConditions | Forecast;
+  timestamp: Date;
+};
 
 @Injectable()
 export class WeatherService {
+  private readonly _cacheDurationTime = environment.cacheDuration;
   static URL = "http://api.openweathermap.org/data/2.5";
   static APPID = "5a4b2d457ecbef9eb2a71e480b947604";
   static ICON_URL =
@@ -17,7 +28,7 @@ export class WeatherService {
   private currentConditions = signal<ConditionsAndZip[]>([]);
 
   /**
-   * We prefer working with  @see {@link Locations} object insead of single zip code
+   * Prefer working with @see {@link Locations} object insead of single zip code
    * This object provide information about:
    * - the action performed: add, remove, load;
    * - the target zipcode of the action;
@@ -27,9 +38,9 @@ export class WeatherService {
    * Load action: is used when we load all locations from localstorage
    *
    * Using forkJoin to make multiple requests at the same time in case of initial load
-   * We use concatMap to add a new location and remove a location because we want to maintain the order of the actions
+   * We use concatMap because we want to maintain the order of the actions
    * For example if we add a location and then remove it, we want to make sure that the location is added before it is removed
-   * 
+   *
    * This pattern is used to avoid nested subscribe in old addCurrentConditions method.
    * @param http
    * @param locationService
@@ -67,27 +78,42 @@ export class WeatherService {
   }
 
   /**
-   * Api call to obtain singlle location data
-   * @param zipcode 
-   * @param action 
+   * Api call to obtain single location data
+   * @param zipcode
+   * @param action
    * @returns Observable<ConditionsAndZip>
    */
-  addCurrentConditions$(zipcode: string, action: LocationAction): Observable<ConditionsAndZip> {
+  addCurrentConditions$(
+    zipcode: string,
+    action: LocationAction
+  ): Observable<ConditionsAndZip> {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
-    return this.http
-      .get<CurrentConditions>(
-        `${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`
-      )
-      .pipe(map((data) => ({ zip: zipcode, data, action })));
+    const cachedResponse = this._getCachedResponse(
+      zipcode,
+      "weather"
+    ) as CurrentConditions;
+    const targetObs$ = cachedResponse
+      ? of(cachedResponse)
+      : this.http
+          .get<CurrentConditions>(
+            `${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`
+          )
+          .pipe(
+            tap((data) => this._setCachedResponse(zipcode, data, "weather"))
+          );
+    return targetObs$.pipe(map((data) => ({ zip: zipcode, data, action })));
   }
 
-    /**
+  /**
    * Observable mapper to ConditionsAndZip for observable type compliance
-   * @param zipcode 
-   * @param action 
+   * @param zipcode
+   * @param action
    * @returns Observable<ConditionsAndZip> with undefined data because the is no need to make a request to remove a location
    */
-  removeCurrentConditions$(zipcode: string, action: LocationAction): Observable<ConditionsAndZip> {
+  removeCurrentConditions$(
+    zipcode: string,
+    action: LocationAction
+  ): Observable<ConditionsAndZip> {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
     return of({ zip: zipcode, data: undefined, action });
   }
@@ -113,10 +139,20 @@ export class WeatherService {
   }
 
   getForecast(zipcode: string): Observable<Forecast> {
+    const cachedResponse = this._getCachedResponse(
+      zipcode,
+      "forecast"
+    ) as Forecast;
     // Here we make a request to get the forecast data from the API. Note the use of backticks and an expression to insert the zipcode
-    return this.http.get<Forecast>(
-      `${WeatherService.URL}/forecast/daily?zip=${zipcode},us&units=imperial&cnt=5&APPID=${WeatherService.APPID}`
-    );
+    return cachedResponse
+      ? of(cachedResponse)
+      : this.http
+          .get<Forecast>(
+            `${WeatherService.URL}/forecast/daily?zip=${zipcode},us&units=imperial&cnt=5&APPID=${WeatherService.APPID}`
+          )
+          .pipe(
+            tap((data) => this._setCachedResponse(zipcode, data, "forecast"))
+          );
   }
 
   getWeatherIcon(id): string {
@@ -133,5 +169,36 @@ export class WeatherService {
     else if (id === 741 || id === 761)
       return WeatherService.ICON_URL + "art_fog.png";
     else return WeatherService.ICON_URL + "art_clear.png";
+  }
+
+  private _setCachedResponse(
+    zipcode: string,
+    conditionAndZip: CurrentConditions | Forecast,
+    call: "weather" | "forecast"
+  ) {
+    const storageItem: CacheResponseItem = {
+      data: conditionAndZip,
+      timestamp: new Date(),
+    };
+    localStorage.setItem(`${zipcode}_${call}`, JSON.stringify(storageItem));
+  }
+  private _getCachedResponse(zipcode: string, call: "weather" | "forecast") {
+    /**
+     * I choose to evaluate _cacheDurationTime here (get) and not in the _setCachedResponse method (set)
+     * In this way is more easy to change the cache duration (configurable) and see correct expiration on cache records.
+     * If we directly set the cache expiration time on setter, change to the duration of cache wont affect already setted records
+     * */
+    const storageItem: CacheResponseItem | undefined = JSON.parse(
+      localStorage.getItem(`${zipcode}_${call}`)
+    );
+    if (storageItem) {
+      const timestamp  = new Date(storageItem.timestamp);
+      timestamp.setSeconds(timestamp.getSeconds() + this._cacheDurationTime);
+      const currentDate = new Date();
+      if (currentDate < timestamp) {
+        return storageItem.data;
+      }
+    }
+    return undefined;
   }
 }

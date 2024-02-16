@@ -1,5 +1,6 @@
 <app-tabs (removeTabClicked)="locationService.removeLocation($event.id)">
   @for(location of currentConditionsByZip(); track location.zip) {
+
   <app-tab
     [id]="location.zip"
     [title]="location.data.name + ' (' + location.zip + ')'"

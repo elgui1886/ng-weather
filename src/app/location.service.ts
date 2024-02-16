@@ -1,19 +1,18 @@
 import { Injectable } from "@angular/core";
 import { ReplaySubject } from "rxjs";
 
-export const LOCATIONS: string = "locations";
-
-export type LocationAction = 'add' | 'remove' | 'load';
-export type Locations = {
+const LOCATIONS: string = "locations";
+type Locations = {
   zipcode?: string;
   action: LocationAction,
   zipcodes: string[]
 };
+export type LocationAction = 'add' | 'remove' | 'load';
 
 @Injectable()
 export class LocationService {
   private _locations$ = new ReplaySubject<Locations>();
-  // Se to easly prevent users from adding the same location multiple times
+  // Set to easly prevent users from adding the same location multiple times
   private _locationSet = new Set<string>();
   private get _locations() {
     return [...this._locationSet];
@@ -31,6 +30,7 @@ export class LocationService {
   }
 
   addLocation(zipcode: string) {
+    if(!zipcode) return;
     if (this._locationSet.has(zipcode)) return;
     this._locationSet.add(zipcode);
     localStorage.setItem(LOCATIONS, JSON.stringify(this._locations));
