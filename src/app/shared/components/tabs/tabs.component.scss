@@ -22,11 +22,14 @@ nav {
                 display: flex; 
                 flex-direction: row; 
                 justify-content: space-between;
+                align-items: center;
                 .tab-header--title {
                     color: white; font-size: large;
                 }
                 .tab-header--action {
                     cursor: pointer;
+                    color: white;
+                    font-size: xx-large;
                 }
             }
 

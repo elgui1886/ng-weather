@@ -1,12 +1,13 @@
 @if(currentSelectedTab(); as seletedTab) {
-  <nav>
-    <ul>
-      @for(tab of currentDisplayedTabs(); track tab.id) {
-      <li
-        (click)="seletedTabChange(tab)"
-        [class.active]="seletedTab.id === tab.id"
-      >
-        <div class="tab-header">
+<nav>
+  <ul>
+    @for(tab of currentDisplayedTabs(); track tab.id) {
+    <li
+      (click)="seletedTabChange(tab)"
+      [class.active]="seletedTab.id === tab.id"
+    >
+      <div class="tab-header">
+        <span class="tab-header--title">
           <ng-container
             *ngTemplateOutlet="
               tab.tabHeader?.template ?? baseHeaderTemplate;
@@ -14,30 +15,30 @@
                 $implicit: tab
               }
             "
-          />
-        </div>
-      </li>
-      }
-    </ul>
-  </nav>
-  <div class="tab-body">
-    <ng-container
-      *ngTemplateOutlet="
-        seletedTab.tabBody?.template ?? baseBodyTemplate;
-        context: { $implicit: seletedTab }
-      "
-    />
-  </div>
+        /></span>
+        <span class="tab-header--action" (click)="removeTab(tab)">&times;</span>
+      </div>
+    </li>
+    }
+  </ul>
+</nav>
+<div class="tab-body">
+  <ng-container
+    *ngTemplateOutlet="
+      seletedTab.tabBody?.template ?? baseBodyTemplate;
+      context: { $implicit: seletedTab }
+    "
+  />
+</div>
 }
 
 <ng-template #baseHeaderTemplate let-tab>
   @if(tab) {
-    <span class="tab-header--title">{{ tab.title }}</span>
-    <span class="tab-header--action" (click)="removeTab(tab)">&times;</span>
+    {{ tab.title }}
   }
 </ng-template>
 <ng-template #baseBodyTemplate let-tab>
   @if (tab) {
-    {{ tab.id }} - {{ tab.title }}
+  {{ tab.id }} - {{ tab.title }}
   }
 </ng-template>
