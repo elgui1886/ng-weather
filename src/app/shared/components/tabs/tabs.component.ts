@@ -8,8 +8,8 @@ import {
   OnDestroy,
   Output,
   QueryList,
+  ViewEncapsulation,
   computed,
-  effect,
   signal,
 } from "@angular/core";
 import { takeUntil, tap } from "rxjs/operators";
@@ -17,7 +17,7 @@ import { takeUntil, tap } from "rxjs/operators";
 @Component({
   selector: "app-tabs",
   templateUrl: "./tabs.component.html",
-  styleUrl: "./tabs.component.scss",
+  styleUrl: "./tabs.component.scss"
 })
 export class TabsComponent implements AfterContentInit, OnDestroy {
   private _destroy = new Subject();
@@ -61,7 +61,6 @@ export class TabsComponent implements AfterContentInit, OnDestroy {
         this._removedTabIds.set([]);
         // If there is no selected tab, set the first tab as selected
         if (tabs.length > 0 && !this.currentSelectedTab()) {
-          debugger;
           this.currentSelectedTab.set(tabs.first);
         }
       });

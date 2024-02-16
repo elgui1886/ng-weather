@@ -1,7 +1,25 @@
-.close {
-  cursor: pointer;
-}
-.flex {
+.custom-tab-header {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
+  flex: 1;
+  align-items: center;
+
+  .custom-tab-header--title {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+  }
+}
+
+.custom-tab-body {
+  padding: 2rem;
+  .custom-tab-body--container {
+    background-color: lightgray;
+    display: flex;
+    column-gap: 5rem;
+    .custom-tab-body--column {
+      padding: 2rem;
+    }
+  }
 }

@@ -1,7 +1,8 @@
-import { Directive, TemplateRef } from "@angular/core";
+import { Directive, TemplateRef, inject } from "@angular/core";
 
 @Directive({
-    selector: 'tab-body',
+    selector: '[tab-body]',
 })
 export class TabBodyDirective {
+    template = inject(TemplateRef);
 }

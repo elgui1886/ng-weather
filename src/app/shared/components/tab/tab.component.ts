@@ -7,8 +7,8 @@ import { TabHeaderDirective } from './tab-header.directive';
   templateUrl: './tab.component.html'
 })
 export class TabComponent {
-  @ContentChild(TabHeaderDirective) tabHeader: TabHeaderDirective;
-  @ContentChild(TabBodyDirective) tabBody: TabBodyDirective;
+  @ContentChild(TabHeaderDirective) tabHeader: TabHeaderDirective | undefined;
+  @ContentChild(TabBodyDirective) tabBody: TabBodyDirective  | undefined;
 
   @Input({
     required: true
