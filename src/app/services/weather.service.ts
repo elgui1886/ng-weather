@@ -5,12 +5,12 @@ import {
   HttpClient,
   HttpContext,
 } from "@angular/common/http";
-import { CurrentConditions } from "../current-conditions/current-conditions.type";
-import { ConditionsAndZip } from "../conditions-and-zip.type";
-import { Forecast } from "../forecasts-list/forecast.type";
+import { CurrentConditions } from "../components/current-conditions/current-conditions.type";
+import { ConditionsAndZip } from "../models/conditions-and-zip.type";
+import { Forecast } from "../components/forecasts-list/forecast.type";
 import { LocationService } from "./location.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { HTTP_CONTEXT } from "app/tokens";
+import { HTTP_CONTEXT } from "app/models/tokens";
 
 @Injectable()
 export class WeatherService {

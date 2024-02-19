@@ -9,7 +9,7 @@ import { Injectable } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { tap } from "rxjs/operators";
 import { environment } from "environments/environment";
-import { HTTP_CONTEXT } from "app/tokens";
+import { HTTP_CONTEXT } from "app/models/tokens";
 
 @Injectable()
 export class HttpCacheInterceptor implements HttpInterceptor {
