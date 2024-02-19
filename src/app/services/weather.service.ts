@@ -1,5 +1,5 @@
 import { Injectable, Signal, signal } from "@angular/core";
-import { Observable, forkJoin, of, zip } from "rxjs";
+import { Observable, forkJoin, of } from "rxjs";
 import { map, tap, mergeMap } from "rxjs/operators";
 import {
   HttpClient,
@@ -71,28 +71,28 @@ export class WeatherService {
         }),
         takeUntilDestroyed()
       )
-      .subscribe(val => console.log('ciaoooo'));
+      .subscribe();
   }
 
   /**
    * Api call to obtain single location data
-   * @param zipcode
+   * @param zip
    * @param action
    * @returns Observable<ConditionsAndZip>
    */
-  addCurrentConditions$(zipcode: string): Observable<ConditionsAndZip> {
+  addCurrentConditions$(zip: string): Observable<ConditionsAndZip> {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
     return this.http
       .get<CurrentConditions>(
-        `${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`,
+        `${WeatherService.URL}/weather?zip=${zip},us&units=imperial&APPID=${WeatherService.APPID}`,
         {
           context: new HttpContext().set(HTTP_CONTEXT, {
-            zip: zipcode,
+            zip,
             call: "weather",
           }),
         }
       )
-      .pipe(map((data) => ({ zip: zipcode, data })));
+      .pipe(map((data) => ({ zip, data })));
   }
 
   /**
