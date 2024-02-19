@@ -31,8 +31,6 @@ export class WeatherService {
    * Load action: is used when we load all locations from localstorage
    *
    * Using forkJoin to make multiple requests at the same time in case of initial load
-   * We use concatMap because we want to maintain the order of the actions
-   * For example if we add a location and then remove it, we want to make sure that the location is added before it is removed
    *
    * This pattern is used to avoid nested subscribe in old addCurrentConditions method.
    *
@@ -45,7 +43,7 @@ export class WeatherService {
     locationService: LocationService
   ) {
     // We also could not subscribe automatically to location service but make it explicit as result from a call to, for example, weatherservice.init() method and let component/user call it
-    // To be sure that we subscribe only when we need to and not every time the service is created
+    // to be sure that we subscribe only when we need to and not every time the service is created
     locationService.location$
       .pipe(
         mergeMap(({ action, zipcodes, zipcode }) => {

@@ -4,10 +4,10 @@ import { ReplaySubject } from "rxjs";
 const LOCATIONS: string = "locations";
 type Locations = {
   zipcode?: string;
-  action: LocationAction,
-  zipcodes: string[]
+  action: LocationAction;
+  zipcodes: string[];
 };
-export type LocationAction = 'add' | 'remove' | 'load';
+export type LocationAction = "add" | "remove" | "load";
 
 @Injectable()
 export class LocationService {
@@ -27,36 +27,36 @@ export class LocationService {
   constructor() {
     const zipcodes = [...this._zipcodes];
     this._locations$.next({
-      action: 'load',
-      zipcodes
-    })
+      action: "load",
+      zipcodes,
+    });
   }
 
   addLocation(zipcode: string) {
     // Prevent emtpy add
-    if(!zipcode) return;
+    if (!zipcode) return;
     // Add the zipcode to the list of zipcodes if not exists
     if (this._zipcodes.has(zipcode)) return;
     const newzipcodes = [...this._zipcodes, zipcode];
-    this._updateLocations(newzipcodes, 'add', zipcode);
+    this._updateLocations(newzipcodes, "add", zipcode);
   }
   removeLocation(zipcode: string) {
-    // Remove the zipcode from the list of zipcodes if exists
-    if (this._zipcodes.has(zipcode)) {
-      // We do not modify the original set, we create a new one
-      const newzipcodes = new Set(this._zipcodes);
-      newzipcodes.delete(zipcode);
-      this._updateLocations([...newzipcodes], 'remove', zipcode);
-    };
+    if (!this._zipcodes.has(zipcode)) return;
+    const newzipcodes = new Set(this._zipcodes);
+    newzipcodes.delete(zipcode);
+    this._updateLocations([...newzipcodes], "remove", zipcode);
   }
 
-
-  private _updateLocations(zipcodes: string[], action: LocationAction, target?: string) {
+  private _updateLocations(
+    zipcodes: string[],
+    action: LocationAction,
+    target: string
+  ) {
     localStorage.setItem(LOCATIONS, JSON.stringify(zipcodes));
     this._locations$.next({
       zipcode: target,
       action,
-      zipcodes
-    })
+      zipcodes,
+    });
   }
 }

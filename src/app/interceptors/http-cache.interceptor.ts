@@ -15,12 +15,12 @@ import { HTTP_CONTEXT } from "app/models/tokens";
 export class HttpCacheInterceptor implements HttpInterceptor {
   private readonly _cacheDurationTime = environment.cacheDuration;
 
-  intercept(req: HttpRequest<any>, next: HttpHandler) {
+  intercept(req: HttpRequest<unknown>, next: HttpHandler) {
     const { zip, call } = req.context.get(HTTP_CONTEXT);
     if (zip && call) {
       const cachedResponse = this._getCachedResponse(`${zip}_${call}`);
       if (cachedResponse) {          
-        return of(new HttpResponse<any>(cachedResponse));    
+        return of(new HttpResponse<unknown>(cachedResponse));    
       }
     }
     return this._sendRequest(req, next, `${zip}_${call}`);
@@ -39,9 +39,7 @@ export class HttpCacheInterceptor implements HttpInterceptor {
       })
     );
   }
-
-
-  private _setCachedResponse(key: string, response: HttpResponse<any>) {
+  private _setCachedResponse(key: string, response: HttpResponse<unknown>) {
     const storageItem = {
       data: response,
       timestamp: new Date(),
@@ -62,7 +60,7 @@ export class HttpCacheInterceptor implements HttpInterceptor {
       timestamp.setSeconds(timestamp.getSeconds() + this._cacheDurationTime);
       const currentDate = new Date();
       if (currentDate < timestamp) {
-        return storageItem.data;
+        return storageItem.data as HttpResponse<unknown>;
       }
     }
     return undefined;
