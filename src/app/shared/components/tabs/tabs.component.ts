@@ -74,7 +74,7 @@ export class TabsComponent {
         this.currentSelectedTab.set(undefined);
       }
     }
-    this._removedTabIds.update((removeIds) => [...removeIds, tab.id]);
+    this._removedTabIds.update(removeIds => [...removeIds, tab.id]);
     this.removeTabClicked.emit(tab);
   }
 }
