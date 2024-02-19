@@ -8,8 +8,8 @@ import {
 import { Injectable } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { tap } from "rxjs/operators";
-import { HTTP_CONTEXT } from "./weather.service";
 import { environment } from "environments/environment";
+import { HTTP_CONTEXT } from "app/tokens";
 
 @Injectable()
 export class HttpCacheInterceptor implements HttpInterceptor {
@@ -34,11 +34,13 @@ export class HttpCacheInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       tap((event) => {
         if (event instanceof HttpResponse) {
-          this._setCachedResponse(key, event);
+          this._setCachedResponse(key, event.clone());
         }
       })
     );
   }
+
+
   private _setCachedResponse(key: string, response: HttpResponse<any>) {
     const storageItem = {
       data: response,

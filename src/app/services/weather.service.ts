@@ -1,33 +1,19 @@
 import { Injectable, Signal, signal } from "@angular/core";
 import { Observable, forkJoin, of, zip } from "rxjs";
-import { map, tap, concatMap, mergeMap } from "rxjs/operators";
+import { map, tap, mergeMap } from "rxjs/operators";
 import {
   HttpClient,
   HttpContext,
-  HttpContextToken,
 } from "@angular/common/http";
-import { CurrentConditions } from "./current-conditions/current-conditions.type";
-import { ConditionsAndZip } from "./conditions-and-zip.type";
-import { Forecast } from "./forecasts-list/forecast.type";
+import { CurrentConditions } from "../current-conditions/current-conditions.type";
+import { ConditionsAndZip } from "../conditions-and-zip.type";
+import { Forecast } from "../forecasts-list/forecast.type";
 import { LocationService } from "./location.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { environment } from "environments/environment";
-
-type CacheResponseItem = {
-  data: CurrentConditions | Forecast;
-  timestamp: Date;
-};
-
-export const HTTP_CONTEXT = new HttpContextToken(() => {
-  return {
-    zip: undefined,
-    call: undefined,
-  };
-});
+import { HTTP_CONTEXT } from "app/tokens";
 
 @Injectable()
 export class WeatherService {
-  private readonly _cacheDurationTime = environment.cacheDuration;
   static URL = "https://api.openweathermap.org/data/2.5";
   static APPID = "5a4b2d457ecbef9eb2a71e480b947604";
   static ICON_URL =
