@@ -1,15 +1,11 @@
 import { Injectable, Signal, signal } from "@angular/core";
 import { Observable, forkJoin, of } from "rxjs";
-import {
-  map,
-  tap,
-  concatMap,
-} from "rxjs/operators";
+import { map, tap, concatMap } from "rxjs/operators";
 import { HttpClient } from "@angular/common/http";
 import { CurrentConditions } from "./current-conditions/current-conditions.type";
 import { ConditionsAndZip } from "./conditions-and-zip.type";
 import { Forecast } from "./forecasts-list/forecast.type";
-import { LocationAction, LocationService } from "./location.service";
+import { LocationService } from "./location.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { environment } from "environments/environment";
 
@@ -29,7 +25,7 @@ export class WeatherService {
 
   /**
    * Prefer working with @see {@link Locations} object insead of single zip code
-   * This object provide information about:
+   * This object from location service provide information about:
    * - the action performed: add, remove, load;
    * - the target zipcode of the action;
    * - the list of updates locations.
@@ -42,26 +38,32 @@ export class WeatherService {
    * For example if we add a location and then remove it, we want to make sure that the location is added before it is removed
    *
    * This pattern is used to avoid nested subscribe in old addCurrentConditions method.
+   * 
+   * We could not inject LocationService in WeatherService, make both independent and use a third service to manage the communication between them.
    * @param http
    * @param locationService
    */
-  constructor(private http: HttpClient, locationService: LocationService) {
+  constructor(
+    private http: HttpClient,
+    locationService: LocationService
+  ) {
+    // We also could not subscribe automatically to location service but make it explicit as result from a call to, for example, weatherservice.init() method and let component/user call it
+    // To be sure that we subscribe only when we need to and not every time the service is created 
     locationService.location$
       .pipe(
         concatMap(({ action, zipcodes, zipcode }) => {
           if (action === "add") {
-            return this.addCurrentConditions$(zipcode, action).pipe(
+            return this.addCurrentConditions$(zipcode).pipe(
               tap((condition) => this.addCurrentConditions(condition))
             );
           }
           if (action === "remove") {
-            return this.removeCurrentConditions$(zipcode, action).pipe(
-              tap(({ zip }) => this.removeCurrentConditions(zip))
-            );
+            return of(this.removeCurrentConditions(zipcode));
           }
           if (action === "load") {
+            // Multiple parallel requests with forkJoin on first load
             const mapped = zipcodes.map((location) =>
-              this.addCurrentConditions$(location, action)
+              this.addCurrentConditions$(location)
             );
             return forkJoin(mapped).pipe(
               tap((conditions) =>
@@ -83,10 +85,7 @@ export class WeatherService {
    * @param action
    * @returns Observable<ConditionsAndZip>
    */
-  addCurrentConditions$(
-    zipcode: string,
-    action: LocationAction
-  ): Observable<ConditionsAndZip> {
+  addCurrentConditions$(zipcode: string): Observable<ConditionsAndZip> {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
     const cachedResponse = this._getCachedResponse(
       zipcode,
@@ -101,30 +100,22 @@ export class WeatherService {
           .pipe(
             tap((data) => this._setCachedResponse(zipcode, data, "weather"))
           );
-    return targetObs$.pipe(map((data) => ({ zip: zipcode, data, action })));
+    return targetObs$.pipe(map((data) => ({ zip: zipcode, data })));
   }
 
   /**
-   * Observable mapper to ConditionsAndZip for observable type compliance
-   * @param zipcode
-   * @param action
-   * @returns Observable<ConditionsAndZip> with undefined data because the is no need to make a request to remove a location
+   * Action to perform when we add a new location
    */
-  removeCurrentConditions$(
-    zipcode: string,
-    action: LocationAction
-  ): Observable<ConditionsAndZip> {
-    // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
-    return of({ zip: zipcode, data: undefined, action });
-  }
-
-  addCurrentConditions({ zip: zipcode, data }: ConditionsAndZip) {
+  addCurrentConditions({ zip: zipcode, data }) {
     this.currentConditions.update((conditions) => [
       ...conditions,
       { zip: zipcode, data },
     ]);
   }
 
+  /**
+   * Action to perform when we remove a new location
+   */
   removeCurrentConditions(zipcode: string) {
     this.currentConditions.update((conditions) => {
       for (let i in conditions) {
@@ -192,7 +183,7 @@ export class WeatherService {
       localStorage.getItem(`${zipcode}_${call}`)
     );
     if (storageItem) {
-      const timestamp  = new Date(storageItem.timestamp);
+      const timestamp = new Date(storageItem.timestamp);
       timestamp.setSeconds(timestamp.getSeconds() + this._cacheDurationTime);
       const currentDate = new Date();
       if (currentDate < timestamp) {

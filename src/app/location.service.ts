@@ -12,44 +12,51 @@ export type LocationAction = 'add' | 'remove' | 'load';
 @Injectable()
 export class LocationService {
   private _locations$ = new ReplaySubject<Locations>();
-  // Set to easly prevent users from adding the same location multiple times
-  private _locationSet = new Set<string>();
-  private get _locations() {
-    return [...this._locationSet];
+
+  // Private Set of zipcodes
+  private get _zipcodes(): Set<string> {
+    const locString = localStorage.getItem(LOCATIONS);
+    let zipcodes = [];
+    if (locString) zipcodes = JSON.parse(locString);
+    return new Set(zipcodes);
   }
 
+  // Public notifier for location changes
   location$ = this._locations$.asObservable();
 
   constructor() {
-    let locString = localStorage.getItem(LOCATIONS);
-    if (locString) this._locationSet = new Set(JSON.parse(locString));
+    const zipcodes = [...this._zipcodes];
     this._locations$.next({
       action: 'load',
-      zipcodes: this._locations
-    });
+      zipcodes
+    })
   }
 
   addLocation(zipcode: string) {
+    // Prevent emtpy add
     if(!zipcode) return;
-    if (this._locationSet.has(zipcode)) return;
-    this._locationSet.add(zipcode);
-    localStorage.setItem(LOCATIONS, JSON.stringify(this._locations));
-    this._locations$.next({
-      zipcode,
-      action: 'add',
-      zipcodes: this._locations
-    })
+    // Add the zipcode to the list of zipcodes if not exists
+    if (this._zipcodes.has(zipcode)) return;
+    const newzipcodes = [...this._zipcodes, zipcode];
+    this._updateLocations(newzipcodes, 'add', zipcode);
   }
   removeLocation(zipcode: string) {
-    if (this._locationSet.has(zipcode)) {
-      this._locationSet.delete(zipcode);
-      localStorage.setItem(LOCATIONS, JSON.stringify(this._locations));
-      this._locations$.next({
-        zipcode,
-        action: 'remove',
-        zipcodes: this._locations
-      })
-
+    // Remove the zipcode from the list of zipcodes if exists
+    if (this._zipcodes.has(zipcode)) {
+      // We do not modify the original set, we create a new one
+      const newzipcodes = new Set(this._zipcodes);
+      newzipcodes.delete(zipcode);
+      this._updateLocations([...newzipcodes], 'remove', zipcode);
     };
+  }
+
+
+  private _updateLocations(zipcodes: string[], action: LocationAction, target?: string) {
+    localStorage.setItem(LOCATIONS, JSON.stringify(zipcodes));
+    this._locations$.next({
+      zipcode: target,
+      action,
+      zipcodes
+    })
   }
 }
