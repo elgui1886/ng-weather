@@ -1,7 +1,11 @@
 import { Injectable, Signal, signal } from "@angular/core";
-import { Observable, forkJoin, of } from "rxjs";
-import { map, tap, concatMap } from "rxjs/operators";
-import { HttpClient } from "@angular/common/http";
+import { Observable, forkJoin, of, zip } from "rxjs";
+import { map, tap, concatMap, mergeMap } from "rxjs/operators";
+import {
+  HttpClient,
+  HttpContext,
+  HttpContextToken,
+} from "@angular/common/http";
 import { CurrentConditions } from "./current-conditions/current-conditions.type";
 import { ConditionsAndZip } from "./conditions-and-zip.type";
 import { Forecast } from "./forecasts-list/forecast.type";
@@ -13,6 +17,13 @@ type CacheResponseItem = {
   data: CurrentConditions | Forecast;
   timestamp: Date;
 };
+
+export const HTTP_CONTEXT = new HttpContextToken(() => {
+  return {
+    zip: undefined,
+    call: undefined,
+  };
+});
 
 @Injectable()
 export class WeatherService {
@@ -38,7 +49,7 @@ export class WeatherService {
    * For example if we add a location and then remove it, we want to make sure that the location is added before it is removed
    *
    * This pattern is used to avoid nested subscribe in old addCurrentConditions method.
-   * 
+   *
    * We could not inject LocationService in WeatherService, make both independent and use a third service to manage the communication between them.
    * @param http
    * @param locationService
@@ -48,10 +59,10 @@ export class WeatherService {
     locationService: LocationService
   ) {
     // We also could not subscribe automatically to location service but make it explicit as result from a call to, for example, weatherservice.init() method and let component/user call it
-    // To be sure that we subscribe only when we need to and not every time the service is created 
+    // To be sure that we subscribe only when we need to and not every time the service is created
     locationService.location$
       .pipe(
-        concatMap(({ action, zipcodes, zipcode }) => {
+        mergeMap(({ action, zipcodes, zipcode }) => {
           if (action === "add") {
             return this.addCurrentConditions$(zipcode).pipe(
               tap((condition) => this.addCurrentConditions(condition))
@@ -76,7 +87,7 @@ export class WeatherService {
         }),
         takeUntilDestroyed()
       )
-      .subscribe();
+      .subscribe(val => console.log('ciaoooo'));
   }
 
   /**
@@ -87,20 +98,17 @@ export class WeatherService {
    */
   addCurrentConditions$(zipcode: string): Observable<ConditionsAndZip> {
     // Here we make a request to get the current conditions data from the API. Note the use of backticks and an expression to insert the zipcode
-    const cachedResponse = this._getCachedResponse(
-      zipcode,
-      "weather"
-    ) as CurrentConditions;
-    const targetObs$ = cachedResponse
-      ? of(cachedResponse)
-      : this.http
-          .get<CurrentConditions>(
-            `${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`
-          )
-          .pipe(
-            tap((data) => this._setCachedResponse(zipcode, data, "weather"))
-          );
-    return targetObs$.pipe(map((data) => ({ zip: zipcode, data })));
+    return this.http
+      .get<CurrentConditions>(
+        `${WeatherService.URL}/weather?zip=${zipcode},us&units=imperial&APPID=${WeatherService.APPID}`,
+        {
+          context: new HttpContext().set(HTTP_CONTEXT, {
+            zip: zipcode,
+            call: "weather",
+          }),
+        }
+      )
+      .pipe(map((data) => ({ zip: zipcode, data })));
   }
 
   /**
@@ -130,20 +138,16 @@ export class WeatherService {
   }
 
   getForecast(zipcode: string): Observable<Forecast> {
-    const cachedResponse = this._getCachedResponse(
-      zipcode,
-      "forecast"
-    ) as Forecast;
     // Here we make a request to get the forecast data from the API. Note the use of backticks and an expression to insert the zipcode
-    return cachedResponse
-      ? of(cachedResponse)
-      : this.http
-          .get<Forecast>(
-            `${WeatherService.URL}/forecast/daily?zip=${zipcode},us&units=imperial&cnt=5&APPID=${WeatherService.APPID}`
-          )
-          .pipe(
-            tap((data) => this._setCachedResponse(zipcode, data, "forecast"))
-          );
+    return this.http.get<Forecast>(
+      `${WeatherService.URL}/forecast/daily?zip=${zipcode},us&units=imperial&cnt=5&APPID=${WeatherService.APPID}`,
+      {
+        context: new HttpContext().set(HTTP_CONTEXT, {
+          zip: zipcode,
+          call: "forecast",
+        }),
+      }
+    );
   }
 
   getWeatherIcon(id): string {
@@ -160,36 +164,5 @@ export class WeatherService {
     else if (id === 741 || id === 761)
       return WeatherService.ICON_URL + "art_fog.png";
     else return WeatherService.ICON_URL + "art_clear.png";
-  }
-
-  private _setCachedResponse(
-    zipcode: string,
-    conditionAndZip: CurrentConditions | Forecast,
-    call: "weather" | "forecast"
-  ) {
-    const storageItem: CacheResponseItem = {
-      data: conditionAndZip,
-      timestamp: new Date(),
-    };
-    localStorage.setItem(`${zipcode}_${call}`, JSON.stringify(storageItem));
-  }
-  private _getCachedResponse(zipcode: string, call: "weather" | "forecast") {
-    /**
-     * I choose to evaluate _cacheDurationTime here (get) and not in the _setCachedResponse method (set)
-     * In this way is more easy to change the cache duration (configurable) and see correct expiration on cache records.
-     * If we directly set the cache expiration time on setter, change to the duration of cache wont affect already setted records
-     * */
-    const storageItem: CacheResponseItem | undefined = JSON.parse(
-      localStorage.getItem(`${zipcode}_${call}`)
-    );
-    if (storageItem) {
-      const timestamp = new Date(storageItem.timestamp);
-      timestamp.setSeconds(timestamp.getSeconds() + this._cacheDurationTime);
-      const currentDate = new Date();
-      if (currentDate < timestamp) {
-        return storageItem.data;
-      }
-    }
-    return undefined;
   }
 }
